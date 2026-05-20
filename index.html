@@ -38,7 +38,6 @@
             margin-top: 50px;
         }
 
-        /* Grille des Addons */
         #addons-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -47,7 +46,6 @@
             margin: 0 auto;
         }
 
-        /* Style des cartes */
         .addon-card {
             background-color: var(--card-color);
             border-radius: 8px;
@@ -111,54 +109,50 @@
     <main id="addons-grid"></main>
 
     <script>
-        // ID de ta collection extrait de ton lien
         const COLLECTION_ID = "2517487893"; 
+        const PROXY_URL = "https://corsproxy.io/?"; 
 
         async function loadAddons() {
             const grid = document.getElementById('addons-grid');
             const loader = document.getElementById('loader');
 
             try {
-                // 1. Demander à Steam les IDs des addons contenus dans la collection
-                const collectionParams = new URLSearchParams();
-                collectionParams.append('collectioncount', '1');
-                collectionParams.append('publishedfileids[0]', COLLECTION_ID);
-
-                const collectionResponse = await fetch('https://api.steampowered.com/ISteamRemoteStorage/GetCollectionDetails/v1/', {
+                // 1. Récupérer les IDs de la collection (en utilisant x-www-form-urlencoded via le proxy)
+                const collectionTarget = 'https://api.steampowered.com/ISteamRemoteStorage/GetCollectionDetails/v1/';
+                const collectionResponse = await fetch(PROXY_URL + encodeURIComponent(collectionTarget), {
                     method: 'POST',
-                    body: collectionParams
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `collectioncount=1&publishedfileids[0]=${COLLECTION_ID}`
                 });
                 const collectionData = await collectionResponse.json();
                 
                 const items = collectionData.response.collectiondetails[0].children;
                 if (!items) {
-                    loader.textContent = "La collection est vide, introuvable ou configurée en 'Privée'.";
+                    loader.textContent = "La collection est vide ou introuvable (Vérifiez qu'elle est bien Publique).";
                     return;
                 }
 
-                // Extraire uniquement la liste des IDs des addons
                 const addonIds = items.map(item => item.publishedfileid);
 
-                // 2. Demander à l'API Steam les détails (Noms, Images) de ces IDs d'un seul coup
-                const formData = new FormData();
-                formData.append('itemcount', addonIds.length);
+                // 2. Construire les paramètres pour obtenir les détails de chaque addon
+                let detailsBody = `itemcount=${addonIds.length}`;
                 addonIds.forEach((id, index) => {
-                    formData.append(`publishedfileids[${index}]`, id);
+                    detailsBody += `&publishedfileids[${index}]=${id}`;
                 });
 
-                const steamResponse = await fetch('https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/', {
+                const detailsTarget = 'https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/';
+                const steamResponse = await fetch(PROXY_URL + encodeURIComponent(detailsTarget), {
                     method: 'POST',
-                    body: formData
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: detailsBody
                 });
                 const steamData = await steamResponse.json();
                 const addonsDetails = steamData.response.publishedfiledetails;
 
-                // Masquer le message de chargement
                 loader.style.display = 'none';
 
-                // 3. Injecter les cartes d'addons dans la grille HTML
+                // 3. Affichage des cartes d'addons
                 addonsDetails.forEach(addon => {
-                    // Si l'addon a été supprimé ou est invalide, on l'ignore
                     if (addon.result === 9) return; 
 
                     const card = document.createElement('a');
@@ -180,12 +174,11 @@
 
             } catch (error) {
                 console.error(error);
-                loader.textContent = "Impossible de joindre le Workshop de Steam. Réessayez plus tard.";
+                loader.textContent = "Erreur de chargement. Vérifiez que la collection Steam est bien publique.";
                 loader.style.color = "#ff4a4a";
             }
         }
 
-        // Lancement du script une fois le DOM prêt
         document.addEventListener('DOMContentLoaded', loadAddons);
     </script>
 </body>
