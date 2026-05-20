@@ -34,7 +34,7 @@
             display: flex;
             justify-content: center;
             gap: 15px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             flex-wrap: wrap;
         }
 
@@ -53,6 +53,30 @@
         .tab-btn.active { background-color: var(--accent-color); color: var(--hover-color); }
         .tab-btn.tab-added.active { background-color: var(--success-color); color: #fff; }
         .tab-btn.tab-removed.active { background-color: var(--danger-color); color: #fff; }
+
+        /* Zone d'action Admin (Bouton Clear) */
+        .admin-zone {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 25px;
+            height: 40px;
+        }
+
+        .clear-btn {
+            display: none; /* Caché par défaut, apparaît selon l'onglet */
+            background-color: #4a154b;
+            color: #fff;
+            border: 1px solid var(--danger-color);
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        .clear-btn:hover {
+            background-color: var(--danger-color);
+        }
 
         .loader { text-align: center; font-size: 1.2rem; color: var(--accent-color); margin-top: 50px; }
 
@@ -78,7 +102,6 @@
 
         .addon-card:hover { transform: translateY(-5px); background-color: var(--hover-color); }
 
-        /* Styles spécifiques des cartes */
         .addon-card.card-added { border: 1px solid var(--success-color); }
         .addon-card.card-removed { border: 1px dashed var(--danger-color); opacity: 0.6; }
 
@@ -113,6 +136,10 @@
         <button class="tab-btn tab-removed" onclick="switchTab('removed')">🗑️ Supprimés</button>
     </div>
 
+    <div class="admin-zone">
+        <button id="clearBtn" class="clear-btn" onclick="clearHistory()">🧹 Vider cet historique</button>
+    </div>
+
     <div id="loader" class="loader">Chargement de l'historique...</div>
 
     <main id="addons-grid"></main>
@@ -120,8 +147,8 @@
     <script>
         const PROXY_URL = "https://corsproxy.io/?"; 
         let historyData = {}; 
+        let currentTab = 'current';
 
-        // Gestion du bouton retour en haut
         window.onscroll = function() {
             const btn = document.getElementById("scrollTopBtn");
             if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) btn.style.display = "flex";
@@ -129,29 +156,36 @@
         };
         function scrollToTop() { document.documentElement.scrollTop = 0; }
 
-        // Initialisation de la page
         async function init() {
             const loader = document.getElementById('loader');
             try {
-                // Charger le fichier d'historique généré par GitHub Actions
                 const response = await fetch(`./history.json?t=${Date.now()}`);
                 if (!response.ok) throw new Error();
                 historyData = await response.json();
 
                 loader.style.display = 'none';
-                switchTab('current'); // Afficher la collection principale par défaut
+                switchTab('current'); 
             } catch (e) {
-                loader.textContent = "Erreur d'initialisation. En attente du premier scan de GitHub Actions...";
+                loader.textContent = "Erreur d'initialisation. En attente du premier scan...";
                 loader.style.color = "var(--danger-color)";
             }
         }
 
-        // Afficher les addons en fonction de l'onglet cliqué
         async function switchTab(category) {
-            // Ajustement visuel des boutons d'onglets
+            currentTab = category;
             const buttons = document.querySelectorAll('.tab-btn');
             buttons.forEach(b => b.classList.remove('active'));
-            event.target.classList.add('active');
+            
+            // Gestion de l'activation visuelle du bouton cliqué
+            if(event && event.target) event.target.classList.add('active');
+
+            // Afficher le bouton de nettoyage SEULEMENT sur 'added' et 'removed'
+            const clearBtn = document.getElementById('clearBtn');
+            if (category === 'added' || category === 'removed') {
+                clearBtn.style.display = "block";
+            } else {
+                clearBtn.style.display = "none";
+            }
 
             const grid = document.getElementById('addons-grid');
             grid.innerHTML = "<div class='loader'>Récupération des données Steam...</div>";
@@ -164,7 +198,6 @@
             }
 
             try {
-                // Interroger l'API de Steam pour les IDs de l'onglet choisi
                 let bodyParams = `itemcount=${ids.length}`;
                 ids.forEach((id, idx) => { bodyParams += `&publishedfileids[${idx}]=${id}`; });
 
@@ -177,7 +210,7 @@
                 const steamData = await res.json();
                 const details = steamData.response.publishedfiledetails;
 
-                grid.innerHTML = ""; // Vider le mini-loader
+                grid.innerHTML = ""; 
 
                 details.forEach(addon => {
                     const card = document.createElement('a');
@@ -205,6 +238,48 @@
             } catch (err) {
                 grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--danger-color);">Erreur lors de la liaison avec Steam.</p>`;
             }
+        }
+
+        // --- FONCTION DE NETTOYAGE (CLEAR) VIA DISPATCH GITHUB ---
+        function clearHistory() {
+            const categoryName = currentTab === 'added' ? 'Récemment Ajoutés' : 'Supprimés';
+            if (!confirm(`Voulez-vous vraiment vider l'historique des "${categoryName}" ?`)) return;
+
+            const password = prompt("Entrez votre mot de passe Admin GitHub :");
+            if (!password) return;
+
+            const btn = document.getElementById('clearBtn');
+            btn.textContent = "Nettoyage en cours sur GitHub...";
+            btn.disabled = true;
+
+            // On envoie l'ordre de clear directement au workflow GitHub Actions via l'API GitHub
+            // Utilise l'API Repository Dispatch pour déclencher l'action à distance
+            fetch('https://api.github.com/repos/Megaghosty/WorkshopChangelog/dispatches', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/vnd.github+json',
+                    'Authorization': `Bearer ${password}`
+                },
+                body: JSON.stringify({
+                    event_type: 'clear_history',
+                    client_payload: { target: currentTab }
+                })
+            })
+            .then(res => {
+                if (res.status === 204) {
+                    alert("Ordre envoyé ! GitHub est en train de vider le fichier history.json. Le site sera à jour dans 1 minute.");
+                    setTimeout(() => { location.reload(); }, 2000);
+                } else {
+                    alert("Erreur : Le mot de passe (Token) est invalide ou expiré.");
+                    btn.textContent = "🧹 Vider cet historique";
+                    btn.disabled = false;
+                }
+            })
+            .catch(err => {
+                alert("Erreur réseau impossible de contacter GitHub.");
+                btn.textContent = "🧹 Vider cet historique";
+                btn.disabled = false;
+            });
         }
 
         document.addEventListener('DOMContentLoaded', init);
