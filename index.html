@@ -47,7 +47,7 @@
             margin: 0 auto;
         }
 
-        /* Style d'une carte d'addon */
+        /* Style des cartes */
         .addon-card {
             background-color: var(--card-color);
             border-radius: 8px;
@@ -102,16 +102,16 @@
 <body>
 
     <header>
-        <h1>📦 Liste des Addons de notre serveur</h1>
-        <p>Cette liste se met à jour automatiquement dès qu'un addon est ajouté à la collection Steam.</p>
+        <h1>📦 Liste des Addons du Serveur</h1>
+        <p>Cette liste affiche en direct les addons de notre collection Steam Workshop.</p>
     </header>
 
-    <div id="loader" class="loader">Chargement des addons depuis le Workshop...</div>
+    <div id="loader" class="loader">Connexion à Steam et récupération des addons...</div>
 
     <main id="addons-grid"></main>
 
     <script>
-        // Configuration : Ton ID de collection est maintenant intégré
+        // ID de ta collection extrait de ton lien
         const COLLECTION_ID = "2517487893"; 
 
         async function loadAddons() {
@@ -119,17 +119,27 @@
             const loader = document.getElementById('loader');
 
             try {
-                // 1. Charger les IDs depuis ton fichier addons.json généré par la GitHub Action
-                const response = await fetch(`./addons.json?t=${Date.now()}`);
-                if (!response.ok) throw new Error("Impossible de lire addons.json");
-                const addonIds = await response.json();
+                // 1. Demander à Steam les IDs des addons contenus dans la collection
+                const collectionParams = new URLSearchParams();
+                collectionParams.append('collectioncount', '1');
+                collectionParams.append('publishedfileids[0]', COLLECTION_ID);
 
-                if (addonIds.length === 0) {
-                    loader.textContent = "Aucun addon dans la liste pour le moment.";
+                const collectionResponse = await fetch('https://api.steampowered.com/ISteamRemoteStorage/GetCollectionDetails/v1/', {
+                    method: 'POST',
+                    body: collectionParams
+                });
+                const collectionData = await collectionResponse.json();
+                
+                const items = collectionData.response.collectiondetails[0].children;
+                if (!items) {
+                    loader.textContent = "La collection est vide, introuvable ou configurée en 'Privée'.";
                     return;
                 }
 
-                // 2. Demander les détails des addons à l'API publique de Steam
+                // Extraire uniquement la liste des IDs des addons
+                const addonIds = items.map(item => item.publishedfileid);
+
+                // 2. Demander à l'API Steam les détails (Noms, Images) de ces IDs d'un seul coup
                 const formData = new FormData();
                 formData.append('itemcount', addonIds.length);
                 addonIds.forEach((id, index) => {
@@ -143,20 +153,19 @@
                 const steamData = await steamResponse.json();
                 const addonsDetails = steamData.response.publishedfiledetails;
 
-                // Cacher le loader
+                // Masquer le message de chargement
                 loader.style.display = 'none';
 
-                // 3. Générer le HTML pour chaque addon
+                // 3. Injecter les cartes d'addons dans la grille HTML
                 addonsDetails.forEach(addon => {
-                    // Si l'addon n'existe plus ou est privé, on passe
+                    // Si l'addon a été supprimé ou est invalide, on l'ignore
                     if (addon.result === 9) return; 
 
                     const card = document.createElement('a');
                     card.className = 'addon-card';
                     card.href = `https://steamcommunity.com/sharedfiles/filedetails/?id=${addon.publishedfileid}`;
-                    card.target = '_blank'; // Ouvre dans un nouvel onglet
+                    card.target = '_blank';
 
-                    // Utilise l'image de l'addon, ou un fallback si elle n'existe pas
                     const imageUrl = addon.preview_url || 'https://via.placeholder.com/300x169?text=Pas+d+image';
 
                     card.innerHTML = `
@@ -166,18 +175,17 @@
                             <span class="addon-link">Voir sur le Workshop →</span>
                         </div>
                     `;
-
                     grid.appendChild(card);
                 });
 
             } catch (error) {
                 console.error(error);
-                loader.textContent = "Erreur lors du chargement des addons. Vérifiez la console.";
+                loader.textContent = "Impossible de joindre le Workshop de Steam. Réessayez plus tard.";
                 loader.style.color = "#ff4a4a";
             }
         }
 
-        // Lancer le script au chargement de la page
+        // Lancement du script une fois le DOM prêt
         document.addEventListener('DOMContentLoaded', loadAddons);
     </script>
 </body>
