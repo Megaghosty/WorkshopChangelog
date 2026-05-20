@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collection d'Addons GMod</title>
+    <style>
+        :root {
+            --bg-color: #1b2838;
+            --card-color: #2a475e;
+            --text-color: #c7d5e0;
+            --accent-color: #66c0f4;
+            --hover-color: #101822;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            color: #fff;
+            margin-bottom: 10px;
+        }
+
+        .loader {
+            text-align: center;
+            font-size: 1.2rem;
+            color: var(--accent-color);
+            margin-top: 50px;
+        }
+
+        /* Grille des Addons */
+        #addons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Style d'une carte d'addon */
+        .addon-card {
+            background-color: var(--card-color);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: transform 0.2s, background-color 0.2s;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .addon-card:hover {
+            transform: translateY(-5px);
+            background-color: var(--hover-color);
+        }
+
+        .addon-image {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            object-fit: cover;
+            background-color: #000;
+        }
+
+        .addon-info {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            flex-grow: 1;
+        }
+
+        .addon-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #fff;
+            margin: 0 0 10px 0;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .addon-link {
+            font-size: 0.85rem;
+            color: var(--accent-color);
+            text-align: right;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>📦 Liste des Addons de notre serveur</h1>
+        <p>Cette liste se met à jour automatiquement dès qu'un addon est ajouté à la collection Steam.</p>
+    </header>
+
+    <div id="loader" class="loader">Chargement des addons depuis le Workshop...</div>
+
+    <main id="addons-grid"></main>
+
+    <script>
+        // Configuration : Ton ID de collection est maintenant intégré
+        const COLLECTION_ID = "2517487893"; 
+
+        async function loadAddons() {
+            const grid = document.getElementById('addons-grid');
+            const loader = document.getElementById('loader');
+
+            try {
+                // 1. Charger les IDs depuis ton fichier addons.json généré par la GitHub Action
+                const response = await fetch(`./addons.json?t=${Date.now()}`);
+                if (!response.ok) throw new Error("Impossible de lire addons.json");
+                const addonIds = await response.json();
+
+                if (addonIds.length === 0) {
+                    loader.textContent = "Aucun addon dans la liste pour le moment.";
+                    return;
+                }
+
+                // 2. Demander les détails des addons à l'API publique de Steam
+                const formData = new FormData();
+                formData.append('itemcount', addonIds.length);
+                addonIds.forEach((id, index) => {
+                    formData.append(`publishedfileids[${index}]`, id);
+                });
+
+                const steamResponse = await fetch('https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/', {
+                    method: 'POST',
+                    body: formData
+                });
+                const steamData = await steamResponse.json();
+                const addonsDetails = steamData.response.publishedfiledetails;
+
+                // Cacher le loader
+                loader.style.display = 'none';
+
+                // 3. Générer le HTML pour chaque addon
+                addonsDetails.forEach(addon => {
+                    // Si l'addon n'existe plus ou est privé, on passe
+                    if (addon.result === 9) return; 
+
+                    const card = document.createElement('a');
+                    card.className = 'addon-card';
+                    card.href = `https://steamcommunity.com/sharedfiles/filedetails/?id=${addon.publishedfileid}`;
+                    card.target = '_blank'; // Ouvre dans un nouvel onglet
+
+                    // Utilise l'image de l'addon, ou un fallback si elle n'existe pas
+                    const imageUrl = addon.preview_url || 'https://via.placeholder.com/300x169?text=Pas+d+image';
+
+                    card.innerHTML = `
+                        <img class="addon-image" src="${imageUrl}" alt="${addon.title}" loading="lazy">
+                        <div class="addon-info">
+                            <h2 class="addon-title" title="${addon.title}">${addon.title}</h2>
+                            <span class="addon-link">Voir sur le Workshop →</span>
+                        </div>
+                    `;
+
+                    grid.appendChild(card);
+                });
+
+            } catch (error) {
+                console.error(error);
+                loader.textContent = "Erreur lors du chargement des addons. Vérifiez la console.";
+                loader.style.color = "#ff4a4a";
+            }
+        }
+
+        // Lancer le script au chargement de la page
+        document.addEventListener('DOMContentLoaded', loadAddons);
+    </script>
+</body>
+</html>
