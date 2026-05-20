@@ -2,7 +2,7 @@ name: Calculateur Historique Workshop
 
 on:
   schedule:
-    - cron: '0 * * * *' # S'exécute automatiquement toutes les heures
+   
   workflow_dispatch: # Te permet de le lancer à la main pour tester
 
 jobs:
