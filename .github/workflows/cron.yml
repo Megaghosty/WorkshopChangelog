@@ -28,4 +28,12 @@ jobs:
         git config --global user.name 'GMod Bot'
         git config --global user.email 'bot@github.com'
         git add history.json
-        git diff --quiet && git diff --staged --quiet || (git commit -m "Mise à jour automatique de l'historique [skip ci]" && git push)
+        # Le git diff vérifie s'il y a du changement à enregistrer
+        if ! git diff --quiet --staged; then
+          git commit -m "Mise à jour automatique de l'historique [skip ci]"
+          # On fait un pull avec rebase pour récupérer tes modifs du web proprement avant de push
+          git pull --rebase origin main
+          git push origin main
+        else
+          console.log "Aucun changement détecté dans la collection."
+        fi
