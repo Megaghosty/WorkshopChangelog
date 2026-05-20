@@ -11,12 +11,11 @@
             --text-color: #c7d5e0;
             --accent-color: #66c0f4;
             --hover-color: #101822;
-            --danger-color: #ff4a4a;
+            --success-color: #4caf50;
+            --danger-color: #f44336;
         }
 
-        html {
-            scroll-behavior: smooth; /* Permet un retour en haut fluide */
-        }
+        html { scroll-behavior: smooth; }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -27,22 +26,16 @@
             padding-bottom: 60px;
         }
 
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
+        header { text-align: center; margin-bottom: 30px; }
+        h1 { color: #fff; margin-bottom: 10px; }
 
-        h1 {
-            color: #fff;
-            margin-bottom: 10px;
-        }
-
-        /* Onglets de filtrage (Actifs vs Supprimés) */
+        /* Onglets */
         .tabs {
             display: flex;
             justify-content: center;
             gap: 15px;
             margin-bottom: 30px;
+            flex-wrap: wrap;
         }
 
         .tab-btn {
@@ -56,22 +49,12 @@
             transition: all 0.2s ease;
         }
 
-        .tab-btn:hover {
-            background-color: var(--hover-color);
-            border-color: var(--accent-color);
-        }
+        .tab-btn:hover { background-color: var(--hover-color); border-color: var(--accent-color); }
+        .tab-btn.active { background-color: var(--accent-color); color: var(--hover-color); }
+        .tab-btn.tab-added.active { background-color: var(--success-color); color: #fff; }
+        .tab-btn.tab-removed.active { background-color: var(--danger-color); color: #fff; }
 
-        .tab-btn.active {
-            background-color: var(--accent-color);
-            color: var(--hover-color);
-        }
-
-        .loader {
-            text-align: center;
-            font-size: 1.2rem;
-            color: var(--accent-color);
-            margin-top: 50px;
-        }
+        .loader { text-align: center; font-size: 1.2rem; color: var(--accent-color); margin-top: 50px; }
 
         #addons-grid {
             display: grid;
@@ -81,7 +64,6 @@
             margin: 0 auto;
         }
 
-        /* Cartes d'addons */
         .addon-card {
             background-color: var(--card-color);
             border-radius: 8px;
@@ -94,230 +76,138 @@
             flex-direction: column;
         }
 
-        .addon-card:hover {
-            transform: translateY(-5px);
-            background-color: var(--hover-color);
-        }
+        .addon-card:hover { transform: translateY(-5px); background-color: var(--hover-color); }
 
-        /* Style spécifique pour les addons indisponibles/supprimés */
-        .addon-card.deleted {
-            border: 1px dashed var(--danger-color);
-            opacity: 0.7;
-        }
+        /* Styles spécifiques des cartes */
+        .addon-card.card-added { border: 1px solid var(--success-color); }
+        .addon-card.card-removed { border: 1px dashed var(--danger-color); opacity: 0.6; }
 
-        .addon-card.deleted .addon-link {
-            color: var(--danger-color);
-        }
+        .addon-image { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background-color: #000; }
+        .addon-info { padding: 15px; display: flex; flex-direction: column; justify-content: space-between; flex-grow: 1; }
+        .addon-title { font-size: 1rem; font-weight: 600; color: #fff; margin: 0 0 10px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .addon-link { font-size: 0.85rem; color: var(--accent-color); text-align: right; font-weight: bold; }
+        .card-added .addon-link { color: var(--success-color); }
+        .card-removed .addon-link { color: var(--danger-color); }
 
-        .addon-image {
-            width: 100%;
-            aspect-ratio: 16 / 9;
-            object-fit: cover;
-            background-color: #000;
-        }
-
-        .addon-info {
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            flex-grow: 1;
-        }
-
-        .addon-title {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #fff;
-            margin: 0 0 10px 0;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .addon-link {
-            font-size: 0.85rem;
-            color: var(--accent-color);
-            text-align: right;
-            font-weight: bold;
-        }
-
-        /* Bouton Flèche Retour en Haut */
         #scrollTopBtn {
-            display: none; /* Caché par défaut */
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            z-index: 99;
-            border: none;
-            outline: none;
-            background-color: var(--accent-color);
-            color: var(--hover-color);
-            cursor: pointer;
-            padding: 15px;
-            border-radius: 50px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            transition: transform 0.2s, background-color 0.2s;
-            width: 50px;
-            height: 50px;
-            align-items: center;
-            justify-content: center;
+            display: none; position: fixed; bottom: 30px; right: 30px; z-index: 99; border: none;
+            background-color: var(--accent-color); color: var(--hover-color); cursor: pointer;
+            padding: 15px; border-radius: 50px; font-size: 1.2rem; font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); width: 50px; height: 50px; align-items: center; justify-content: center;
         }
-
-        #scrollTopBtn:hover {
-            background-color: #fff;
-            transform: scale(1.1);
-        }
+        #scrollTopBtn:hover { background-color: #fff; transform: scale(1.1); }
     </style>
 </head>
 <body>
 
-    <button id="scrollTopBtn" onclick="scrollToTop()" title="Retour en haut">▲</button>
+    <button id="scrollTopBtn" onclick="scrollToTop()">▲</button>
 
     <header>
-        <h1>📦 Liste des Addons du Serveur</h1>
-        <p>Cette liste affiche en direct la gestion des addons de notre collection Steam Workshop.</p>
+        <h1>📦 Gestion des Addons du Serveur</h1>
+        <p>Suivi en direct et historique complet de notre collection Steam Workshop.</p>
     </header>
 
     <div class="tabs">
-        <button class="tab-btn active" onclick="filterAddons('active')">Addons Actifs</button>
-        <button class="tab-btn" onclick="filterAddons('deleted')">Supprimés / Introuvables</button>
+        <button class="tab-btn active" onclick="switchTab('current')">Collection Actuelle</button>
+        <button class="tab-btn tab-added" onclick="switchTab('added')">🔥 Récemment Ajoutés</button>
+        <button class="tab-btn tab-removed" onclick="switchTab('removed')">🗑️ Supprimés</button>
     </div>
 
-    <div id="loader" class="loader">Connexion à Steam et récupération des addons...</div>
+    <div id="loader" class="loader">Chargement de l'historique...</div>
 
     <main id="addons-grid"></main>
 
     <script>
-        const COLLECTION_ID = "2517487893"; 
         const PROXY_URL = "https://corsproxy.io/?"; 
-        
-        let allAddonsData = []; // Stockage global pour le filtrage dynamique
+        let historyData = {}; 
 
-        // --- GESTION DU SCROLL (FLÈCHE DE RETOUR EN HAUT) ---
-        window.onscroll = function() { scrollFunction() };
-
-        function scrollFunction() {
+        // Gestion du bouton retour en haut
+        window.onscroll = function() {
             const btn = document.getElementById("scrollTopBtn");
-            // La flèche apparaît si on descend de plus de 300px
-            if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
-                btn.style.display = "flex";
-            } else {
-                btn.style.display = "none";
-            }
-        }
+            if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) btn.style.display = "flex";
+            else btn.style.display = "none";
+        };
+        function scrollToTop() { document.documentElement.scrollTop = 0; }
 
-        function scrollToTop() {
-            document.body.scrollTop = 0; // Pour Safari
-            document.documentElement.scrollTop = 0; // Pour Chrome, Firefox, IE et Opera
-        }
-
-        // --- CHARGEMENT DES DONNÉES STEAM ---
-        async function loadAddons() {
+        // Initialisation de la page
+        async function init() {
             const loader = document.getElementById('loader');
-
             try {
-                // 1. Récupérer les IDs de la collection
-                const collectionTarget = 'https://api.steampowered.com/ISteamRemoteStorage/GetCollectionDetails/v1/';
-                const collectionResponse = await fetch(PROXY_URL + encodeURIComponent(collectionTarget), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: `collectioncount=1&publishedfileids[0]=${COLLECTION_ID}`
-                });
-                const collectionData = await collectionResponse.json();
-                
-                const items = collectionData.response.collectiondetails[0].children;
-                if (!items) {
-                    loader.textContent = "La collection est vide ou introuvable (Vérifiez qu'elle est bien Publique).";
-                    return;
-                }
-
-                const addonIds = items.map(item => item.publishedfileid);
-
-                // 2. Récupérer les détails de chaque addon
-                let detailsBody = `itemcount=${addonIds.length}`;
-                addonIds.forEach((id, index) => {
-                    detailsBody += `&publishedfileids[${index}]=${id}`;
-                });
-
-                const detailsTarget = 'https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/';
-                const steamResponse = await fetch(PROXY_URL + encodeURIComponent(detailsTarget), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: detailsBody
-                });
-                const steamData = await steamResponse.json();
-                
-                // Enregistrement des détails dans notre variable globale
-                allAddonsData = steamData.response.publishedfiledetails;
+                // Charger le fichier d'historique généré par GitHub Actions
+                const response = await fetch(`./history.json?t=${Date.now()}`);
+                if (!response.ok) throw new Error();
+                historyData = await response.json();
 
                 loader.style.display = 'none';
-
-                // Initialisation de la vue sur les addons actifs uniquement
-                renderGrid('active');
-
-            } catch (error) {
-                console.error(error);
-                loader.textContent = "Erreur de chargement. Vérifiez que la collection Steam est bien publique.";
+                switchTab('current'); // Afficher la collection principale par défaut
+            } catch (e) {
+                loader.textContent = "Erreur d'initialisation. En attente du premier scan de GitHub Actions...";
                 loader.style.color = "var(--danger-color)";
             }
         }
 
-        // --- AFFICHAGE ET FILTRAGE DES ADDONS ---
-        function renderGrid(filterType) {
+        // Afficher les addons en fonction de l'onglet cliqué
+        async function switchTab(category) {
+            // Ajustement visuel des boutons d'onglets
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+
             const grid = document.getElementById('addons-grid');
-            grid.innerHTML = ""; // Vider la grille avant ré-affichage
+            grid.innerHTML = "<div class='loader'>Récupération des données Steam...</div>";
 
-            let count = 0;
+            const ids = historyData[category] || [];
 
-            allAddonsData.forEach(addon => {
-                // Vérification si l'addon est supprimé ou privé (Steam renvoie result: 9 dans ce cas)
-                const isDeleted = (addon.result === 9 || !addon.title);
+            if (ids.length === 0) {
+                grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: #8b9bb4;">Aucun addon dans cette catégorie pour le moment.</p>`;
+                return;
+            }
 
-                // Logique de filtrage
-                if (filterType === 'active' && isDeleted) return;
-                if (filterType === 'deleted' && !isDeleted) return;
+            try {
+                // Interroger l'API de Steam pour les IDs de l'onglet choisi
+                let bodyParams = `itemcount=${ids.length}`;
+                ids.forEach((id, idx) => { bodyParams += `&publishedfileids[${idx}]=${id}`; });
 
-                count++;
+                const target = 'https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/';
+                const res = await fetch(PROXY_URL + encodeURIComponent(target), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: bodyParams
+                });
+                const steamData = await res.json();
+                const details = steamData.response.publishedfiledetails;
 
-                const card = document.createElement('a');
-                card.className = `addon-card ${isDeleted ? 'deleted' : ''}`;
-                card.href = `https://steamcommunity.com/sharedfiles/filedetails/?id=${addon.publishedfileid}`;
-                card.target = '_blank';
+                grid.innerHTML = ""; // Vider le mini-loader
 
-                const imageUrl = addon.preview_url || 'https://via.placeholder.com/300x169?text=Image+Indisponible';
-                const displayTitle = addon.title || `Addon Supprimé (ID: ${addon.publishedfileid})`;
-                const linkText = isDeleted ? "Indisponible sur le Workshop ✖" : "Voir sur le Workshop →";
+                details.forEach(addon => {
+                    const card = document.createElement('a');
+                    card.className = `addon-card card-${category}`;
+                    card.href = `https://steamcommunity.com/sharedfiles/filedetails/?id=${addon.publishedfileid}`;
+                    card.target = '_blank';
 
-                card.innerHTML = `
-                    <img class="addon-image" src="${imageUrl}" alt="${displayTitle}" loading="lazy">
-                    <div class="addon-info">
-                        <h2 class="addon-title" title="${displayTitle}">${displayTitle}</h2>
-                        <span class="addon-link">${linkText}</span>
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
+                    const imageUrl = addon.preview_url || 'https://via.placeholder.com/300x169?text=Image+Workshop';
+                    const title = addon.title || `Addon Introuvable (${addon.publishedfileid})`;
+                    
+                    let statusText = "Voir sur le Workshop →";
+                    if(category === 'added') statusText = "Nouveau ! Voir →";
+                    if(category === 'removed') statusText = "Supprimé de la collection ✖";
 
-            // Si aucun addon ne correspond au filtre sélectionné
-            if (count === 0) {
-                grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: #8b9bb4;">Aucun addon dans cette catégorie.</p>`;
+                    card.innerHTML = `
+                        <img class="addon-image" src="${imageUrl}" alt="${title}" loading="lazy">
+                        <div class="addon-info">
+                            <h2 class="addon-title" title="${title}">${title}</h2>
+                            <span class="addon-link">${statusText}</span>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+
+            } catch (err) {
+                grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--danger-color);">Erreur lors de la liaison avec Steam.</p>`;
             }
         }
 
-        function filterAddons(type) {
-            // Gérer le style actif sur les boutons d'onglets
-            const buttons = document.querySelectorAll('.tab-btn');
-            buttons.forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-
-            // Mettre à jour la grille
-            renderGrid(type);
-        }
-
-        document.addEventListener('DOMContentLoaded', loadAddons);
+        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
