@@ -1,9 +1,9 @@
 name: Calculateur Historique Workshop
 
 on:
-  schedule:
-   
-  workflow_dispatch: # Te permet de le lancer à la main pour tester
+  workflow_dispatch: # Te permet de le lancer à la main depuis l'interface GitHub si besoin
+  repository_dispatch:
+    types: [clear_history] # Reçoit l'ordre immédiatement quand tu cliques sur un bouton du site
 
 jobs:
   build-history:
@@ -20,7 +20,22 @@ jobs:
       with:
         node-version: 20
 
+    # ÉTAPE CLEAR : S'exécute SEULEMENT si tu as cliqué sur le bouton "Vider cet historique"
+    - name: Nettoyage de l'historique demandé
+      if: github.event_name == 'repository_dispatch' && github.event.action == 'clear_history'
+      run: |
+        TARGET_TAB="${{ github.event.client_payload.target }}"
+        node -e "
+          const fs = require('fs');
+          const data = JSON.parse(fs.readFileSync('./history.json', 'utf8'));
+          if ('$TARGET_TAB' === 'added') data.added = [];
+          if ('$TARGET_TAB' === 'removed') data.removed = [];
+          fs.writeFileSync('./history.json', JSON.stringify(data, null, 2));
+        "
+
+    # ÉTAPE SCAN : S'exécute si tu as cliqué sur "Forcer la synchronisation Steam" ou si tu le lances depuis GitHub
     - name: Lancer la détection des changements
+      if: github.event_name != 'repository_dispatch' || github.event.action != 'clear_history'
       run: node checker.js
 
     - name: Enregistrer les modifications dans le dépôt
@@ -28,12 +43,10 @@ jobs:
         git config --global user.name 'GMod Bot'
         git config --global user.email 'bot@github.com'
         git add history.json
-        # Le git diff vérifie s'il y a du changement à enregistrer
         if ! git diff --quiet --staged; then
-          git commit -m "Mise à jour automatique de l'historique [skip ci]"
-          # On fait un pull avec rebase pour récupérer tes modifs du web proprement avant de push
+          git commit -m "Mise à jour à la demande de l'historique [skip ci]"
           git pull --rebase origin main
           git push origin main
         else
-          console.log "Aucun changement détecté dans la collection."
+          echo "Aucun changement détecté dans la collection."
         fi
