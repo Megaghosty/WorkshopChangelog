@@ -1,0 +1,31 @@
+name: Calculateur Historique Workshop
+
+on:
+  schedule:
+    - cron: '0 * * * *' # S'exécute automatiquement toutes les heures
+  workflow_dispatch: # Te permet de le lancer à la main pour tester
+
+jobs:
+  build-history:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Récupérer le code
+      uses: actions/checkout@v4
+
+    - name: Configurer Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    - name: Lancer la détection des changements
+      run: node checker.js
+
+    - name: Enregistrer les modifications dans le dépôt
+      run: |
+        git config --global user.name 'GMod Bot'
+        git config --global user.email 'bot@github.com'
+        git add history.json
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Mise à jour automatique de l'historique [skip ci]" && git push)
